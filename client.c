@@ -3,36 +3,122 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <arpa/inet.h>
-#include<unistd.h>
+#include <unistd.h>
 // Structure to hold link status
 
-
-struct _linkStatus {
+struct _linkStatus
+{
 
 	char *status;
-}linkstatus;
+} linkstatus;
 
 //Structure to events occuring to change link status
 
-struct _lmpEvents {
-
+struct _lmpEvents
+{
 	char *events;
-}lmpevents;
+} lmpevents;
 
 //possible events affecting link status as per RFC 4204
 
-enum _listofEvents {evBringUp, evCCDn, evConfDone, evConfErr, evNewConfOK,
-	evNewConfErr, evContenWin, evContenLost, evAdminDown,
-	evNbrGoesDn, evHelloRcvd, evHoldTimer, evSeqNumErr,
-	evReconfig, evConfRet, evHelloRet, evDownTimer};
+enum _listofEvents
+{
+	evBringUp,
+	evCCDn,
+	evConfDone,
+	evConfErr,
+	evNewConfOK,
+	evNewConfErr,
+	evContenWin,
+	evContenLost,
+	evAdminDown,
+	evNbrGoesDn,
+	evHelloRcvd,
+	evHoldTimer,
+	evSeqNumErr,
+	evReconfig,
+	evConfRet,
+	evHelloRet,
+	evDownTimer
+};
 
 //possible link status as per RFC 4204
 
-enum _listofStates {Down, ConfSnd, ConfRcv, Active, Up, GoingDown};
+enum _listofStates
+{
+	Down,
+	ConfSnd,
+	ConfRcv,
+	Active,
+	Up,
+	GoingDown
+};
+char buffer[1024];
+int clientSocket;
 
-int main(){
-	int clientSocket;
-	char buffer[1024];
+void send_toserver(const char *message, int size, int socket)
+{
+	strcpy(buffer, message);
+	send(socket, buffer, 1024, 0);
+	bzero(buffer, sizeof(buffer));
+}
+
+int test_commands()
+{
+	int input;
+	while (input != 10)
+	{
+		printf("Please select from the following choice\n 1. ConfigAck 2.Config  \n");
+		scanf("%d", &input);
+
+		switch (input)
+		{
+		case 1:
+			send_toserver("configAck", 1024, clientSocket);
+			break;
+
+		case 2:
+			send_toserver("configNack", 1024, clientSocket);
+			break;
+
+		case 3:
+			send_toserver("NewConfig", 1024, clientSocket);
+			break;
+
+		case 4:
+			send_toserver("hello", 1024, clientSocket);
+			break;
+
+		case 5:
+			send_toserver("CCDown", 1024, clientSocket);
+			break;
+
+		case 6:
+			send_toserver("CCDnFlg", 1024, clientSocket);
+			break;
+
+		case 7:
+			send_toserver("reConfig", 1024, clientSocket);
+			break;
+
+		case 8:
+			send_toserver("helloSeqErr", 1024, clientSocket);
+			break;
+
+		case 9:
+			send_toserver("newConfigErr", 1024, clientSocket);
+			break;
+
+		case 10:
+			return 0;
+		default:
+			break;
+		}
+	}
+}
+
+int main()
+{
 	struct sockaddr_in serverAddr;
 	socklen_t addr_size;
 	enum _listofEvents event;
@@ -49,93 +135,29 @@ int main(){
 	/* Set IP address to localhost */
 	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	/* Set all bits of the padding field to 0 */
-	memset(serverAddr.sin_zero, '\0', sizeof serverAddr.sin_zero);  
+	memset(serverAddr.sin_zero, '\0', sizeof serverAddr.sin_zero);
 
 	/*---- Connect the socket to the server using the address struct ----*/
 	addr_size = sizeof serverAddr;
-	connect(clientSocket, (struct sockaddr *) &serverAddr, addr_size);
+	connect(clientSocket, (struct sockaddr *)&serverAddr, addr_size);
 	/*---- Read the message from the server into the buffer ----*/
-	state=2;	
-	linkstatus.status="ConfRcv";
-	//while(1) {
+	state = 2;
+	linkstatus.status = "ConfRcv";
 
-	while(recv(clientSocket, buffer, 1024, 0) < 0) {
-
+	while (recv(clientSocket, buffer, 1024, 0) < 0)
+	{
 		puts("waiting for peer to send its message");
+		sleep(2);
 	}
-	event=0;
-	printf("my event is =%d\n",event);
-	printf("Message received from peer: %s",buffer);   
-	bzero(buffer,sizeof(buffer));
 
-	strcpy(buffer,"configAck");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
+		event = 0;
+		printf("\nmy event is =%d\n", event);
+		printf("Message received from peer: %s", buffer);
+		bzero(buffer, sizeof(buffer));
 
-	strcpy(buffer,"hello");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
+	while (test_commands()) {}
 
-	strcpy(buffer,"NewConfig");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
 
-	strcpy(buffer,"hello");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-
-	strcpy(buffer,"CCDown");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-
-	strcpy(buffer,"CCDnFlg");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-	
-	strcpy(buffer,"configNack");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-
-	strcpy(buffer,"reConfig");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-
-	strcpy(buffer,"configAck");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-
-	strcpy(buffer,"helloSeqErr");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-	
-	strcpy(buffer,"hello");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-	
-	strcpy(buffer,"helloSeqErr");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-	
-	strcpy(buffer,"newConfigErr");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-	
-	strcpy(buffer,"newConfigErr");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-	
-	strcpy(buffer,"newConfig");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-	
-	strcpy(buffer,"hello");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-	
-	strcpy(buffer,"reConfig");
-	send(clientSocket,buffer,1024,0);
-	bzero(buffer,sizeof(buffer));
-	//}
 	close(clientSocket);
 	return 0;
 }
